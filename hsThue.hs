@@ -4,14 +4,16 @@ import System.Environment (getArgs)
 
 import Data.List.Split (splitOn)
 
+import Control.Monad (void)
+
 delim = "::=" :: String
 outp  = '~'   :: Char
 
 data Action = Output | Subst
   deriving (Eq,Show)
 
-splitAtFirst :: Eq a => [a] -> [a] -> ([a],[a]) 
-splitAtFirst _ _ = ([],[])
+data Flag = Debug | LeftE | RightE
+  deriving (Eq,Show)
 
 mkRuleBase :: String -> [(String,String,Action)]
 mkRuleBase x = map (addAnn . twoTuple . splitOn delim) $
@@ -28,14 +30,24 @@ mkRuleBase x = map (addAnn . twoTuple . splitOn delim) $
 mkInitState :: String -> String
 mkInitState = unlines . tail . dropWhile (/=delim) . lines
 
+mkFlag :: String -> Flag
+mkFlag x | x == "d"  = Debug
+         | x == "r"  = RightE
+         | x == "l"  = LeftE
+         | otherwise = error "Unknown Flag -- mkFlag"
+
+-- runProg :: String
+
 main :: IO ()
 main = do
   [sw,fn] <- getArgs
   f <- readFile fn
   let rB = mkRuleBase f  -- Rulebase
       iS = mkInitState f -- Initial state 
+      fl = mkFlag sw     -- Flag
   print rB
   print iS
+  print fl
 
-  -- void $ run
+--  void $ runProg fl rB iS
 
