@@ -12,10 +12,12 @@ outp  = '~'   :: Char
 data Action = Output | Subst
   deriving (Eq,Show)
 
-data Flag = Debug | LeftE | RightE
+data Flag = Debug | NoFlag
   deriving (Eq,Show)
 
-mkRuleBase :: String -> [(String,String,Action)]
+type RuleBase = [(String,String,Action)]
+
+mkRuleBase :: String -> RuleBase
 mkRuleBase x = map (addAnn . twoTuple . splitOn delim) $
                 filter (not . null) $
                 takeWhile (/=delim) $ lines x 
@@ -23,7 +25,7 @@ mkRuleBase x = map (addAnn . twoTuple . splitOn delim) $
         twoTuple [x,y] = (x,y)
         twoTuple _     = error "Rulebase is not correct -- mkRuleBase"
 
-        addAnn :: (String,String) -> (String,String,Action)
+        addAnn :: (String,String) -> RuleBase
         addAnn (x,y:ys) | y == outp = (x,ys,Output)
                         | otherwise = (x,y:ys,Subst) 
 
@@ -32,22 +34,23 @@ mkInitState = unlines . tail . dropWhile (/=delim) . lines
 
 mkFlag :: String -> Flag
 mkFlag x | x == "d"  = Debug
-         | x == "r"  = RightE
-         | x == "l"  = LeftE
+         | x == "n"  = NoFlag 
          | otherwise = error "Unknown Flag -- mkFlag"
 
--- runProg :: String
+runProg :: Flag -> RuleBase -> String
+runProg Debug rB iS = f iS False
+  where f s d = if d 
+                then s
+                else -- map subsequences s
 
 main :: IO ()
 main = do
-  [sw,fn] <- getArgs
-  f <- readFile fn
+  args <- getArgs
+  f <- readFile $ if length args == 1 then head args else args !! 1
   let rB = mkRuleBase f  -- Rulebase
       iS = mkInitState f -- Initial state 
-      fl = mkFlag sw     -- Flag
-  print rB
-  print iS
-  print fl
+      -- Flag
+      fl = mkFlag $ if length args == 2 then head args else "n"    
 
---  void $ runProg fl rB iS
+  void $ runProg fl rB iS
 
