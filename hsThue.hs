@@ -6,6 +6,12 @@ import Data.List.Split (splitOn)
 
 import Control.Monad (void)
 
+{- TODO
+ - * Write String Split library
+ -    * splitOn :: String -> String -> [String]
+ -    * substitute :: String -> String -> String
+ -}
+
 delim = "::=" :: String
 outp  = '~'   :: Char
 
