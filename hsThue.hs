@@ -3,8 +3,12 @@ module Main where
 
 import System.Environment (getArgs)
 
-import qualified Data.Text as T
-import qualified Data.Text.IO as T
+import Data.Text (Text, splitOn, null, lines, unlines, cons, 
+                  uncons, strip, concat, count, pack,replace)
+import Data.Text.IO (putStr,putStrLn,readFile)
+
+import Prelude hiding (null, lines, unlines, readFile,
+                       cons, concat, putStr,putStrLn)
 
 import Control.Monad (when,foldM)
 
@@ -19,7 +23,7 @@ can do whatever you want with this stuff. If we meet some day, and you think
 this stuff is worth it, you can buy me a beer in return Sebastian Benque
 -}
 
-delim = "::=" :: T.Text
+delim = "::=" :: Text
 outp  = '~'   :: Char
 
 data Action = Output | Subst
@@ -28,49 +32,49 @@ data Action = Output | Subst
 data Flag = Debug | NoFlag
   deriving (Eq,Show)
 
-type RuleBase = (T.Text,T.Text,Action)
+type RuleBase = (Text,Text,Action)
 
-mkRuleBase :: T.Text -> [RuleBase]
-mkRuleBase x = map (addAnn . twoTuple . T.splitOn delim) $
-                filter (not . T.null) $
-                takeWhile (/=delim) $ T.lines x 
-  where twoTuple ::  [T.Text] -> (T.Text,T.Text)
+mkRuleBase :: Text -> [RuleBase]
+mkRuleBase x = map (addAnn . twoTuple . splitOn delim) $
+                filter (not . null) $
+                takeWhile (/=delim) $ lines x 
+  where twoTuple ::  [Text] -> (Text,Text)
         twoTuple [x,y] = (x,y)
         twoTuple _     = error "Rulebase is not correct -- mkRuleBase"
 
-        addAnn :: (T.Text,T.Text) -> RuleBase
-        addAnn (x,T.uncons -> Just (y,ys)) | y == outp = (x,ys,Output)
-                                           | otherwise = (x,T.cons y ys,Subst) 
+        addAnn :: (Text,Text) -> RuleBase
+        addAnn (x,uncons -> Just (y,ys)) | y == outp = (x,ys,Output)
+                                           | otherwise = (x,cons y ys,Subst) 
 
-mkInitState :: T.Text -> T.Text
-mkInitState = T.strip . T.unlines . tail . dropWhile (/=delim) . T.lines
+mkInitState :: Text -> Text
+mkInitState = strip . unlines . tail . dropWhile (/=delim) . lines
 
-mkFlag :: T.Text -> Flag
+mkFlag :: Text -> Flag
 mkFlag x | x == "d"  = Debug
          | x == "n"  = NoFlag 
          | otherwise = error "Unknown Flag -- mkFlag"
 
-runProg :: Flag -> [RuleBase] -> T.Text -> IO T.Text
+runProg :: Flag -> [RuleBase] -> Text -> IO Text
 runProg  fl rB = f
   where f iS = let g a (x,y,s) = do when (fl == Debug)
-                                         $ T.putStr "DEBUG: " >> T.putStrLn iS
+                                         $ putStr "DEBUG: " >> putStrLn iS
                                     if s == Output 
-                                    then T.putStrLn (T.concat $ replicate (T.count x a) y)
-                                         >> return (T.concat $ T.splitOn x a)
-                                    else return $ T.replace x y a
+                                    then putStrLn (concat $ replicate (count x a) y)
+                                         >> return (concat $ splitOn x a)
+                                    else return $ replace x y a
                 in do iS' <- foldM g iS rB
                       if iS' == iS then return iS' else f iS' 
 
 main :: IO ()
 main = do
   args <- getArgs
-  f <- T.readFile $ if length args == 1 then head args 
-                    else if length args == 2 then args !! 1
-                    else error "Argument error -- main"
+  f <- readFile $ if length args == 1 then head args 
+                  else if length args == 2 then args !! 1
+                  else error "Argument error -- main"
   let rB = mkRuleBase f  -- Rulebase
       iS = mkInitState f -- Initial state 
       -- Flag
-      fl = mkFlag $ if length args == 2 then T.pack $ head args else "n"    
+      fl = mkFlag $ if length args == 2 then pack $ head args else "n"    
 
-  runProg fl rB iS >>= T.putStrLn
+  runProg fl rB iS >>= putStrLn
 
