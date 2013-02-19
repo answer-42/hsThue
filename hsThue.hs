@@ -44,7 +44,7 @@ mkRuleBase x = map (addAnn . twoTuple . splitOn delim) $
 
         addAnn :: (Text,Text) -> RuleBase
         addAnn (x,uncons -> Just (y,ys)) | y == outp = (x,ys,Output)
-                                           | otherwise = (x,cons y ys,Subst) 
+                                         | otherwise = (x,cons y ys,Subst) 
 
 mkInitState :: Text -> Text
 mkInitState = strip . unlines . tail . dropWhile (/=delim) . lines
